@@ -4,13 +4,20 @@ from PIL import Image, ImageTk
 from random import seed
 from tkinter import filedialog
 import numpy as np
+from compiler import Compile
 
 
 def file_generation():
-    print(label_file_explorer['text'])
+    f = open(label_file_explorer['text'].split(' ')[-1], 'r')
+    program = f.read()
+    f.close()
+    Compile(program)
+    
 
 def code_generation():
-    print(code_text.get("1.0",'end-1c'))
+    program = code_text.get("1.0",'end-1c')
+    Compile(program)
+    
 
 def browseFiles():
     filename = filedialog.askopenfilename(initialdir = "/",
@@ -57,5 +64,5 @@ generate_code.grid(column=0, row=4)
 
 
 
-
-root.mainloop()
+if __name__ == '__main__':
+    root.mainloop()

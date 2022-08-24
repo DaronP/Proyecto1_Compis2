@@ -10,7 +10,8 @@ class Symbol:
             if not param:
                 raise "Invalid param"
 
-        Console.emit(Level.INFO, f"Instanced a new Symbol of type {symbol_type}")
+        Console.emit(
+            Level.INFO, f"Instanced a new Symbol of type {symbol_type}")
         return Symbol(symbol_type, symbol_id, size, offset, is_param)
 
     def __init__(self, symbol_type: str, symbol_id: str, size: int, offset: int, is_param: bool):

@@ -1,4 +1,4 @@
-from Structs.SymbolsTable import *
+from Structs.Table import *
 from antlr_out.COOLLexer import COOLLexer
 from antlr_out.COOLParser import COOLParser
 from antlr_out.COOLVisitor import COOLVisitor
@@ -12,7 +12,7 @@ class Visitor(visitorClass):
         self._id = 0
         self._symbols = SymbolsTable()
         self._scope = Scope()
-        self._methods = []
+        self._methods = MethodsTable()
         self._types = []
         self._x = 0
         self._errors = []
@@ -94,16 +94,16 @@ class Visitor(visitorClass):
         parameters = []
         isVoid = False
 
-        #Checking if void
+        # Checking if void
         if return_type == 'VOID':
             isVoid = True
 
-        #Parameters
+        # Parameters
         for i in ctx.formal():
-            parameters.append([i.getText().split(':')[0], i.getText().split(':')[1]])
-        
+            parameters.append([i.getText().split(':')[0],
+                              i.getText().split(':')[1]])
 
-        #Checking for duplicated formal params
+        # Checking for duplicated formal params
         newlist = []
         duplist = []
         for param in parameters:
@@ -111,7 +111,7 @@ class Visitor(visitorClass):
                 newlist.append(param)
             else:
                 duplist.append(param)
-        
+
         if duplist:
             for dup in duplist:
                 error = 'A formal parameter >> {} << is found to be duplicated at method >> {} << inside the class >> {} <<, at line {}'.format(
@@ -124,18 +124,31 @@ class Visitor(visitorClass):
             print(error)
             return super().visitMethod(ctx)
 
-        #Checking if main method
-        self._methods.append(id)
-        if scope == 'Main' and id == 'main':
-            self.mainMethodExists = True
-        
-        #Checking return type
-
-        if self.mainMethodExists is not True and scope == 'Main':
-            error = 'No main method found'
+        # Checking if main method
+        new_method = Method(
+            body=block,
+            name=id,
+            parameters=parameters,
+            scope=scope,
+            return_type=return_type,
+        )
+        if self._methods.exists(new_method):
+            error = 'Error: Method {} already defined'.format(id)
             self._errors.append(error)
             print(error)
-            return super().visitMethod(ctx)
-        
-        print(parameters)
+        else:
+            self._methods.push(new_method)
+        # self._methods.append(id)
+        if scope == 'Main' and id == 'main':
+            self.mainMethodExists = True
+
+        # Checking return type
+
+        # if self.mainMethodExists is not True and scope == 'Main':
+        #     error = 'No main method found'
+        #     self._errors.append(error)
+        #     print(error)
+        #     return super().visitMethod(ctx)
+
+        # print(parameters)
         return super().visitMethod(ctx)

@@ -1,25 +1,17 @@
 from Console.Events import Console, Level
-from Stack import Stack
+from Structs.Stack import Stack
 
 
 # Try to make it so that instances are only data holders
 class Symbol:
-    @staticmethod
-    def generate_new_symbol(symbol_type: str, symbol_id: str, size: int, offset: int = 0, is_param: bool = False):
-        for param in [symbol_type, symbol_id, size]:
-            if not param:
-                raise "Invalid param"
-
-        Console.emit(
-            Level.INFO, f"Instanced a new Symbol of type {symbol_type}")
-        return Symbol(symbol_type, symbol_id, size, offset, is_param)
-
-    def __init__(self, symbol_type: str, symbol_id: str, size: int, offset: int, is_param: bool):
+    def __init__(self, symbol_type: str = "", symbol_id: str = "", scope='global', offset: int = 0, line: int = -1, column: int = -1):
         self.type = symbol_type
         self.id = symbol_id
-        self.size = size
+        # self.size = size
         self.offset = offset
-        self.is_param = is_param
+        self.scope = scope
+        self.line = line
+        self.column = column
 
     def get_type(self):
         return self.type
@@ -27,14 +19,23 @@ class Symbol:
     def get_id(self):
         return self.id
 
-    def get_size(self):
-        return self.size
+    # def get_size(self):
+        # return self.size
 
     def get_offset(self):
         return self.offset
 
-    def is_parameter(self):
-        return self.is_param
+    def get_scope(self):
+        return self.scope
+
+    def get_line(self):
+        return self.line
+
+    def get_column(self):
+        return self.column
+
+    def get_coords(self):
+        return self.line, self.column
 
 
 class SymbolsTable:
@@ -50,11 +51,40 @@ class SymbolsTable:
         return self.table.pop()
 
     def push(self, new_symbol: Symbol) -> None:
-        return self.__add__(new_symbol)
+        return self.table.push(new_symbol)
 
-    def find(self, symbol_id: str = None, find_symbol: Symbol = None) -> (Symbol or None):
-        if symbol_id:
-            return self.table.find(symbol_id, lambda a, b: a.id == b)
-        elif find_symbol:
-            return self.table.find(find_symbol, lambda a, b: a.id == b.id)
+    def find(self, find_symbol: Symbol = None) -> (Symbol or None):
+        for symbol in self.table.getContent():
+            current_symbol: Symbol = symbol
+            if current_symbol.get_id() == find_symbol.get_id() and current_symbol.get_scope() == find_symbol.get_scope():
+                return current_symbol
         return None
+
+    def symbol_exists(self, symbol: Symbol) -> bool:
+        return self.find(symbol.id) is not None
+
+
+class Scope:
+    def __init__(self) -> None:
+        self.scope = Stack()
+
+    def get_scope(self) -> str:
+        return self.scope.peek()
+
+    def push_scope(self, scope: str) -> None:
+        self.scope.push(scope)
+
+    def pop_scope(self) -> bool:
+        if not self.scope.empty():
+            self.scope.pop()
+            return True
+        return False
+
+    def go_back_scopes(self, number_of_scopes) -> None:
+        for _ in range(number_of_scopes):
+            if not self.pop_scope():  # Scope is empty, stop
+                return
+
+    def clean(self) -> None:
+        while not self.scope.empty():
+            self.pop_scope()

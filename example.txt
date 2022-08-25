@@ -1,0 +1,24 @@
+class Coordinates {
+    x: INT;
+    y: INT;
+};
+
+class Point inherits Coordinates {
+    sum(one: INT): INT {
+        x + y 
+    };
+};
+
+class Line {
+    from: Point;
+    to: Point;
+};
+
+class Main {
+    x: INT;
+    y: INT;
+    main(): INT { 
+        x <- 1; 
+        y <- 2; 
+    }
+};

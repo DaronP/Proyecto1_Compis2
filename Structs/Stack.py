@@ -1,11 +1,9 @@
 class Stack:
-    _content = []
-
     def __init__(self):
-        pass
+        self._content = []
 
     def empty(self):
-        return bool(len(self._content))
+        return not bool(len(self._content))
 
     def size(self):
         return len(self._content)
@@ -17,7 +15,8 @@ class Stack:
         self._content.append(new)
 
     def pop(self):
-        return self._content.pop()
+        if not self.empty():
+            return self._content.pop()
 
     def find(self, element, comparator=lambda internal, external: internal == external):
         # Go through it in reverse
@@ -27,3 +26,6 @@ class Stack:
             if bool(comparator(self._content[j], element)):
                 return self._content[j]
         return None
+
+    def getContent(self):
+        return self._content

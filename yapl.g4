@@ -1,70 +1,53 @@
 grammar yapl;
 
-program:
-	'Program' Id (declarationBlock | procedure)* 'Begin' statementList 'End' Id '.' EOF;
+program: 'Program' Id (declarationBlock | procedure)* 'Begin' statementList 'End' Id '.' EOF;
 
-declarationBlock:
-	'Declare' (
-		constDeclaration
-		| varDeclaration
-		| recordDeclaration
-	)*;
+declarationBlock: 'Declare' (constDeclaration | varDeclaration | recordDeclaration)*;
 constDeclaration: 'Const' Id '=' literal ';';
 varDeclaration: type Id (',' Id)* ';';
 recordDeclaration: 'Record' Id varDeclaration+ 'EndRecord' ';';
 
-procedure:
-	'Procedure' returnType Id '(' (param (',' param)*)? ')' block Id ';';
+procedure: 'Procedure' returnType Id '(' (param (',' param)*)? ')' block Id ';';
 param: type Id;
 procedureCall: Id '(' (expression (',' expression)*)? ')';
 returnStatement: 'Return' expression?;
 
 block: declarationBlock? 'Begin' statementList 'End';
-statement: (
-		assignment
-		| procedureCall
-		| returnStatement
-		| ifStatement
-		| whileStatement
-		| writeStatement
-		| block
-	) ';';
+statement: (assignment | procedureCall | returnStatement | ifStatement | whileStatement | writeStatement | block) ';';
 statementList: statement*;
 
-assignment: fullIdentifier op = ':=' expression;
-ifStatement:
-	'If' expression 'Then' statementList (
-		'Else' elseStatementList = statementList
-	)? 'EndIf';
-whileStatement:
-	'While' expression 'Do' statementList 'EndWhile';
+assignment: fullIdentifier op=':=' expression;
+ifStatement: 'If' expression 'Then' statementList ('Else' elseStatementList=statementList)? 'EndIf';
+whileStatement: 'While' expression 'Do' statementList 'EndWhile';
 writeStatement: 'Write' String;
 
-expression:
-	expression op = (MUL | DIV | MOD) expression		# ArithmeticExpr
-	| expression op = (ADD | SUB) expression			# ArithmeticExpr
-	| expression op = (LT | LE | GT | GE) expression	# Comparison
-	| expression op = (EQ | NE) expression				# EqualityComparison
-	| expression op = AND expression					# BooleanExpr
-	| expression op = OR expression						# BooleanExpr
-	| sign = (ADD | SUB)? primaryExpr					# UnaryExpr
-	| 'new' baseType ('[' expression ']')*				# CreationExpr;
+expression: expression  op=(MUL | DIV | MOD) expression #ArithmeticExpr
+          | expression  op=(ADD | SUB) expression #ArithmeticExpr
+          | expression  op=(LT | LE | GT | GE) expression #Comparison
+          | expression  op=(EQ | NE) expression #EqualityComparison
+          | expression  op=AND expression #BooleanExpr
+          | expression  op=OR expression #BooleanExpr
+          | sign=(ADD | SUB)? primaryExpr #UnaryExpr
+          | 'new' baseType ('[' expression ']')* #CreationExpr
+          ;
 
-primaryExpr:
-	literal
-	| fullIdentifier
-	| procedureCall
-	| arrayLength
-	| '(' expression ')';
+primaryExpr : literal
+            | fullIdentifier
+            | procedureCall
+            | arrayLength
+            | '(' expression ')'
+            ;
 
-arrayLength: '#' fullIdentifier;
+arrayLength : '#' fullIdentifier;
 fullIdentifier: Id selector?;
 selector: ('[' expression ']' | '.' Id) selector?;
 
 returnType: 'void' | type;
-type: baseType ('[' ']')*;
-baseType: 'int' | 'bool' | Id;
+type : baseType ('[' ']')*;
+baseType : 'int' | 'bool' | Id;
 literal: Boolean | Number;
+
+
 
 LT: '<';
 LE: '<=';

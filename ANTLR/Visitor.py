@@ -91,8 +91,13 @@ class Visitor(visitorClass):
         return_type = ctx.TYPEID().getText()
         block = ctx.expression().getText()
         in_line = ctx.start.line
-        parameters = []
+        parameters: list(Parameter) = []
         isVoid = False
+
+        # REQUIREMENTS
+
+        # - Methods can't be repeated in the same scope
+        # - Overriding methods must have the same signature
 
         # Checking if void
         if return_type == 'VOID':
@@ -100,12 +105,14 @@ class Visitor(visitorClass):
 
         # Parameters
         for i in ctx.formal():
-            parameters.append([i.getText().split(':')[0],
-                              i.getText().split(':')[1]])
+            name, param_type = i.getText().split(':')
+            new_param = Parameter(name=name, param_type=param_type)
+            parameters.append(new_param)
 
         # Checking for duplicated formal params
-        newlist = []
-        duplist = []
+
+        newlist: list(Parameter) = []
+        duplist: list(Parameter) = []
         for param in parameters:
             if param not in newlist:
                 newlist.append(param)
@@ -113,15 +120,13 @@ class Visitor(visitorClass):
                 duplist.append(param)
 
         if duplist:
-            for dup in duplist:
-                error = 'A formal parameter >> {} << is found to be duplicated at method >> {} << inside the class >> {} <<, at line {}'.format(
-                    dup[0],
-                    id,
-                    scope,
-                    in_line
-                )
-                self._errors.append(error)
-            print(error)
+            self._errors.extend(['A method parameter >> {} << is repeated inside the method >> {} << from the >> {} << class,  (line {})'.format(
+                dup.get_name(),
+                id,
+                scope,
+                in_line
+            ) for dup in duplist])
+            # print(error)
             return super().visitMethod(ctx)
 
         # Checking if main method
@@ -132,6 +137,7 @@ class Visitor(visitorClass):
             scope=scope,
             return_type=return_type,
         )
+
         if self._methods.exists(new_method):
             error = 'Error: Method {} already defined'.format(id)
             self._errors.append(error)
@@ -144,11 +150,11 @@ class Visitor(visitorClass):
 
         # Checking return type
 
-        # if self.mainMethodExists is not True and scope == 'Main':
-        #     error = 'No main method found'
-        #     self._errors.append(error)
-        #     print(error)
-        #     return super().visitMethod(ctx)
+        if self.mainMethodExists is not True and scope == 'Main':
+            error = 'No main method found'
+            self._errors.append(error)
+            print(error)
+            return super().visitMethod(ctx)
 
-        # print(parameters)
+        print(parameters)
         return super().visitMethod(ctx)

@@ -56,7 +56,7 @@ class Parameter:
 
 
 class Method:
-    def __init__(self, body: str = "", scope: str = "", name: str = "", parameters: list(Parameter) = [], return_type="void") -> None:
+    def __init__(self, body: str = "", scope: str = "", name: str = "", parameters=[], return_type="void") -> None:
         self.body = body
         self.scope = scope
         self.name = name

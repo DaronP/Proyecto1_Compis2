@@ -1,11 +1,24 @@
 class Coordinates {
     x: INT;
     y: INT;
+
+    isSet(): Bool {
+        true
+    };
 };
 
 class Point inherits Coordinates {
-    sum(one: INT): INT {
-        x + y 
+    isSet(somevar: Bool) : Bool { false };
+    init(hd : Int, tl : List) : INT {    
+        {        
+            x + y;
+            x + y;
+            x + y;
+            x + y;
+        }
+    };
+    some_init(hd : Int, tl : List) : INT {    
+        x + y            
     };
 };
 
@@ -17,8 +30,10 @@ class Line {
 class Main {
     x: INT;
     y: INT;
-    main(): INT { 
-        x <- 1; 
-        y <- 2; 
-    }
+    main(): INT {
+        { 
+            x <- 1;
+            y <- 2; 
+        }
+    };
 };

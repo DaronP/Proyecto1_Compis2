@@ -18,6 +18,7 @@ class Visitor(visitorClass):
         self._errors = []
         self._type_id = 0
         self.mainExists = False
+        self.mainMethodExists = False
 
     def get_symbols(self):
         return self._symbols
@@ -85,4 +86,56 @@ class Visitor(visitorClass):
         # ctx.start.line -> line number
         # ctx.start.column -> column number
         # ctx.formal() -> LIST -> LIST[x].getText -> method formal parameters
+        scope = self._scope.get_scope()
+        id = ctx.OBJECTID().getText()
+        return_type = ctx.TYPEID().getText()
+        block = ctx.expression().getText()
+        in_line = ctx.start.line
+        parameters = []
+        isVoid = False
+
+        #Checking if void
+        if return_type == 'VOID':
+            isVoid = True
+
+        #Parameters
+        for i in ctx.formal():
+            parameters.append([i.getText().split(':')[0], i.getText().split(':')[1]])
+        
+
+        #Checking for duplicated formal params
+        newlist = []
+        duplist = []
+        for param in parameters:
+            if param not in newlist:
+                newlist.append(param)
+            else:
+                duplist.append(param)
+        
+        if duplist:
+            for dup in duplist:
+                error = 'A formal parameter >> {} << is found to be duplicated at method >> {} << inside the class >> {} <<, at line {}'.format(
+                    dup[0],
+                    id,
+                    scope,
+                    in_line
+                )
+                self._errors.append(error)
+            print(error)
+            return super().visitMethod(ctx)
+
+        #Checking if main method
+        self._methods.append(id)
+        if scope == 'Main' and id == 'main':
+            self.mainMethodExists = True
+        
+        #Checking return type
+
+        if self.mainMethodExists is not True and scope == 'Main':
+            error = 'No main method found'
+            self._errors.append(error)
+            print(error)
+            return super().visitMethod(ctx)
+        
+        print(parameters)
         return super().visitMethod(ctx)

@@ -197,7 +197,7 @@ class Visitor(visitorClass):
 
             # It is by redefinition
             else:
-                error = 'Redefinition of method {} in "{}" scope'.format(
+                error = 'Redefinition of method {} in "{}"\'s scope'.format(
                     id, scope)
                 self._errors.append(error)
                 Error(error)
@@ -239,10 +239,11 @@ class Visitor(visitorClass):
         existing_symbol = self._symbols.find(new_symbol)
         if existing_symbol:
             if existing_symbol.inherits_from is None:
-                error = 'Redefinition of property {} in "{}" scope'.format(
+                error = 'Redefinition of property {} in "{}"\'s scope'.format(
                     name, scope)
                 self._errors.append(error)
                 Error(error)
+                return super().visitProperty(ctx)
             elif existing_symbol.type != new_symbol.type:
                 error = 'Symbol "{}" of type "{}" in scope "{}" is already defined as type "{}" in scope "{}"'.format(
                     new_symbol.id,
@@ -251,8 +252,13 @@ class Visitor(visitorClass):
                     existing_symbol.type,
                     existing_symbol.inherits_from
                 )
+                self._errors.append(error)
                 Error(error)
+                return super().visitProperty(ctx)
             existing_symbol.inherits_from = None
         self._symbols.push(new_symbol)
         print(new_symbol)
         return super().visitProperty(ctx)
+
+    def visitMinus(self, ctx: COOLParser.MinusContext):
+        return super().visitMinus(ctx)

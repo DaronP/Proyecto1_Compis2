@@ -121,6 +121,7 @@ class Visitor(visitorClass):
         in_line = ctx.start.line
         parameters: list(Parameter) = []
         isVoid = False
+        isInherited = False
 
         # REQUIREMENTS
 
@@ -157,7 +158,7 @@ class Visitor(visitorClass):
             # print(error)
             return super().visitMethod(ctx)
 
-        # Checking if main method
+        
         new_method = Method(
             body=block,
             name=id,
@@ -166,6 +167,7 @@ class Visitor(visitorClass):
             return_type=return_type,
         )
 
+
         previous_existing_method: Method = self._methods.find(new_method)
 
         # The method existed already, either by inheritance or by redefinition
@@ -173,6 +175,7 @@ class Visitor(visitorClass):
 
             # It is by inheritance
             if previous_existing_method.inherited_from is not None:
+                isInherited = True
 
                 # The method is overriding a method from a parent class if they have the same signature
                 # If they have the same signature, it is overriding
@@ -204,16 +207,119 @@ class Visitor(visitorClass):
         else:
             self._methods.push(new_method)
         # self._methods.append(id)
+
+        # Checking if main method
         if scope == 'Main' and id == 'main':
             self.mainMethodExists = True
-
-        # Checking return type
-
+        
         if self.mainMethodExists is not True and scope == 'Main':
             error = 'No main method found'
             self._errors.append(error)
             Error(error)
             return super().visitMethod(ctx)
+
+        # Checking return type
+        
+        symbols_content = []            
+        for sc in self.get_symbols().table._content:
+            symbols_content.append([sc.id, sc.type])
+
+        if id != 'main':
+            if block.isalnum():
+                chill = False
+                for p in symbols_content:
+                    if block in p and return_type in p or (block == 'true' and return_type == 'Bool') or (block == '1' and return_type == 'Bool') or (block == 'false' and return_type == 'Bool') or (block == '0' and return_type == 'Bool'):
+                        chill = True
+                if not chill and p[1] != 'class':
+                    error = 'Method {} from {} is returning attr or expression of type {}. Expected {}'.format(
+                        id,
+                        scope,
+                        p[1],
+                        return_type
+                    )
+                    self._errors.append(error)
+                    Error(error)
+
+            else:
+                if ';' in block:
+                    block = block.split(';')[-2]
+                if '+' in block:
+                    block_spl = block.split('+')
+                    chill = False
+                    for b in block_spl:
+                        for p in symbols_content:
+                            if b == p[0] and return_type == p[1]:
+                                chill = True
+                    if not chill and p[1] != 'class':
+                        error = 'Method {} from {} is returning attr or expression of type {}. Expected {}'.format(
+                            id,
+                            scope,
+                            p[1],
+                            return_type
+                        )
+                        self._errors.append(error)
+                        Error(error)
+
+                if '-' in block:
+                    block_spl = block.split('-')
+                    chill = False
+                    for b in block_spl:
+                        for p in symbols_content:
+                            if b == p[0] and return_type == p[1]:
+                                chill = True
+                    if not chill and p[1] != 'class':
+                        error = 'Method {} from {} is returning attr or expression of type {}. Expected {}'.format(
+                            id,
+                            scope,
+                            p[1],
+                            return_type
+                        )
+                        self._errors.append(error)
+                        Error(error)
+
+                if '*' in block:
+                    block_spl = block.split('*')
+                    chill = False
+                    for b in block_spl:
+                        for p in symbols_content:
+                            if b == p[0] and return_type == p[1]:
+                                chill = True
+                    if not chill and p[1] != 'class':
+                        error = 'Method {} fro {} is returning attr or expression of type {}. Expected {}'.format(
+                            id,
+                            scope,
+                            p[1],
+                            return_type
+                        )
+                        self._errors.append(error)
+                        Error(error)
+
+                if '/' in block:
+                    block_spl = block.split('/')
+                    chill = False
+                    for b in block_spl:
+                        for p in symbols_content:
+                            if b == p[0] and return_type == p[1]:
+                                chill = True
+                    if not chill and p[1] != 'class':
+                        error = 'Method {} from {} is returning attr or expression of type {}. Expected {}'.format(
+                            id,
+                            scope,
+                            p[1],
+                            return_type
+                        )
+                        self._errors.append(error)
+                        Error(error)
+
+            if return_type == 'VOID':
+                block = block.split(';')[-2]
+                if block:
+                    error = 'Invalid expression. Void method {} from {} is trying to return a value.'.format(
+                        id,
+                        scope
+                    )
+                    self._errors.append(error)
+                    Error(error)
 
         # print(parameters)
         return super().visitMethod(ctx)

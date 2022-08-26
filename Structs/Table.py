@@ -178,17 +178,30 @@ class MethodsTable(Table):
             raise "Trying to push a non-method into the methods table"
         return super().push(new_element)
 
-    def find(self, find_element: Method = None):
-        if find_element is None:
+    def find(self, find_element: Method = None, element_name: str = None, element_scope: str = None):
+        if find_element is not None:
+            for method in self.table.get_content():
+                current_method: Method = method
+                if current_method.name == find_element.name:
+                    return [current_method]
             return None
-        for method in self.table.get_content():
-            current_method: Method = method
-            if current_method.name == find_element.name and current_method.scope == find_element.scope:
-                return current_method
-        return None
 
-    def exists(self, method: Method) -> bool:
-        return self.find(method) is not None
+        res = self.table.get_content().copy()
+        if element_name is not None:
+            res = list(filter(lambda x: x is not None, [element if element.name ==
+                                                        element_name else None for element in res]))
+        if element_scope is not None:
+            res = list(filter(lambda x: x is not None, [element if element.scope ==
+                                                        element_scope else None for element in res]))
+        final_arr = []
+
+        for el in res:
+            if el is not None:
+                final_arr.append(el)
+        return final_arr if len(final_arr) else None
+
+    def exists(self, method: Method = None, method_name: str = None, scope: str = None) -> bool:
+        return self.find(find_element=method, element_name=method_name, element_scope=scope) is not None
 
     def __str__(self) -> str:
         element_list = [
@@ -201,13 +214,24 @@ class MethodsTable(Table):
 
 
 class Scope:
+    def __init__(self, name: str = '', type: str = '') -> None:
+        self.name = name
+        self.type = type
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class ScopeStack:
     def __init__(self) -> None:
         self.scope = Stack()
 
-    def get_scope(self, offset=-1) -> str:
+    def get_scope(self, offset=-1) -> Scope:
         return self.scope.peek(offset)
 
-    def push_scope(self, scope: str) -> None:
+    def push_scope(self, scope: Scope) -> None:
+        if not isinstance(scope, Scope):
+            raise "Trying to push a non-scope into the scope stack"
         self.scope.push(scope)
 
     def pop_scope(self) -> bool:

@@ -11,7 +11,7 @@ class Visitor(visitorClass):
     def __init__(self) -> None:
         self._id = 0
         self._symbols = SymbolsTable()
-        self._scope = Scope()
+        self._scope = ScopeStack()
         self._methods = MethodsTable()
         self._types = []
         self._x = 0
@@ -44,7 +44,7 @@ class Visitor(visitorClass):
         '''
         # Everytime we are entering a class definition, we are inside the global scope (Classes can't be declared in any other scope)
         self._scope.clean()
-        self._scope.push_scope('global')
+        self._scope.push_scope(Scope('global', 'global'))
 
         name = ctx.TYPEID()[0].getText()  # The name of the class
         if name == 'Main':
@@ -74,7 +74,7 @@ class Visitor(visitorClass):
             Error(error)
             return super().visitClassDefine(ctx)
 
-        self._scope.push_scope(name)
+        self._scope.push_scope(Scope(name, 'class'))
         self._symbols.push(new_symbol)
         if inherited:
             inherited_symbol = self._symbols.find(element_name=inherited)
@@ -109,9 +109,9 @@ class Visitor(visitorClass):
     def verify_returns(self, sym_content=list(), id='', block='', return_type='', scope=''):
         if id == 'main':
             return True
-        
+
         if ';' in block:
-                block = block.split(';')[-2]
+            block = block.split(';')[-2]
 
         if block.isalnum():
             chill = False
@@ -136,7 +136,6 @@ class Visitor(visitorClass):
                 return error
             else:
                 return True
-            
 
         else:
             if '+' in block:
@@ -152,7 +151,7 @@ class Visitor(visitorClass):
                         scope,
                         p[1],
                         return_type
-                    )                    
+                    )
                     return error
                 else:
                     return True
@@ -229,13 +228,23 @@ class Visitor(visitorClass):
         # ctx.start.column -> column number
         # ctx.formal() -> LIST -> LIST[x].getText -> method formal parameters
         scope = self._scope.get_scope()
+        # Check if the current scope is a method
+
+        # region Info
         id = ctx.OBJECTID().getText()
+        last_scope = self._scope.get_scope()
+        # if we are entering a new function, exit the scope of the previous function and enter a new one
+        if last_scope.type == 'method':
+            print('Pooped scope {}'.format(last_scope.name))
+            self._scope.pop_scope()
+        print('Entering scope {} from scope {}'.format(id, last_scope.name))
+        self._scope.push_scope(Scope(id, 'method'))
+        # if self._methods.exists(method_name=id, scope=scope):
+        # pass
         return_type = ctx.TYPEID().getText()
         block = ctx.expression().getText()
         in_line = ctx.start.line
         parameters: list(Parameter) = []
-        isVoid = False
-        isInherited = False
 
         # REQUIREMENTS
 
@@ -246,7 +255,8 @@ class Visitor(visitorClass):
         if return_type == 'VOID':
             isVoid = True
 
-        # Parameters
+        # endregion
+        # region Parameters
         for i in ctx.formal():
             name, param_type = i.getText().split(':')
             new_param = Parameter(name=name, param_type=param_type)
@@ -269,10 +279,9 @@ class Visitor(visitorClass):
                 scope,
                 in_line
             ) for dup in duplist])
-            # print(error)
             return super().visitMethod(ctx)
-
-        
+        # endregion
+        # region Duplicate checking
         new_method = Method(
             body=block,
             name=id,
@@ -280,7 +289,6 @@ class Visitor(visitorClass):
             scope=scope,
             return_type=return_type,
         )
-
 
         previous_existing_method: Method = self._methods.find(new_method)
 
@@ -322,29 +330,28 @@ class Visitor(visitorClass):
             self._methods.push(new_method)
         # self._methods.append(id)
 
-        # Checking if main method
+        # endregion
+        # region Return type checking
         if scope == 'Main' and id == 'main':
             self.mainMethodExists = True
-        
-        if self.mainMethodExists is not True and scope == 'Main':
-            error = 'No main method found'
-            self._errors.append(error)
-            Error(error)
-            return super().visitMethod(ctx)
+        # endregion
+        # region Return Type Check
+        symbols_content = []
 
-
-        # Checking return type        
-        symbols_content = []            
-        for sc in self.get_symbols().table._content:
+        # Grab the last symbol
+        print()
+        for sc in self._symbols.table.get_content():
             symbols_content.append([sc.id, sc.type])
 
-        return_checked = self.verify_returns(symbols_content, id, block, return_type, scope)
+        return_checked = self.verify_returns(
+            symbols_content, id, block, return_type, scope)
         if return_checked != True:
             if return_checked == None:
                 print(symbols_content, id, block, return_type, scope)
-            self._errors.append(return_checked)
-            Error(return_checked)
-
+            else:
+                self._errors.append(return_checked)
+                Error(return_checked)
+        # endregion
         # print(parameters)
         return super().visitMethod(ctx)
 

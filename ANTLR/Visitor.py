@@ -106,6 +106,120 @@ class Visitor(visitorClass):
 
         return super().visitClassDefine(ctx)
 
+    def verify_returns(self, sym_content=list(), id='', block='', return_type='', scope=''):
+        if id == 'main':
+            return True
+        
+        if ';' in block:
+                block = block.split(';')[-2]
+
+        if block.isalnum():
+            chill = False
+            for p in sym_content:
+                if block in p and return_type in p or (block == 'true' and return_type == 'Bool') or (block == '1' and return_type == 'Bool') or (block == 'false' and return_type == 'Bool') or (block == '0' and return_type == 'Bool'):
+                    chill = True
+            if (block == 'true' and return_type != 'Bool') or (block == 'false' and return_type != 'Bool'):
+                error = 'Method {} from {} is returning attr or expression of type {}. Expected {}'.format(
+                    id,
+                    scope,
+                    'Bool',
+                    return_type
+                )
+                return error
+            if not chill and p[1] != 'class':
+                error = 'Method {} from {} is returning attr or expression of type {}. Expected {}'.format(
+                    id,
+                    scope,
+                    p[1],
+                    return_type
+                )
+                return error
+            else:
+                return True
+            
+
+        else:
+            if '+' in block:
+                block_spl = block.split('+')
+                chill = False
+                for b in block_spl:
+                    for p in sym_content:
+                        if b == p[0] and return_type == p[1]:
+                            chill = True
+                if not chill and p[1] != 'class':
+                    error = 'Method {} from {} is returning attr or expression of type {}. Expected {}'.format(
+                        id,
+                        scope,
+                        p[1],
+                        return_type
+                    )                    
+                    return error
+                else:
+                    return True
+
+            if '-' in block:
+                block_spl = block.split('-')
+                chill = False
+                for b in block_spl:
+                    for p in sym_content:
+                        if b == p[0] and return_type == p[1]:
+                            chill = True
+                if not chill and p[1] != 'class':
+                    error = 'Method {} from {} is returning attr or expression of type {}. Expected {}'.format(
+                        id,
+                        scope,
+                        p[1],
+                        return_type
+                    )
+                    return error
+                else:
+                    return True
+
+            if '*' in block:
+                block_spl = block.split('*')
+                chill = False
+                for b in block_spl:
+                    for p in sym_content:
+                        if b == p[0] and return_type == p[1]:
+                            chill = True
+                if not chill and p[1] != 'class':
+                    error = 'Method {} fro {} is returning attr or expression of type {}. Expected {}'.format(
+                        id,
+                        scope,
+                        p[1],
+                        return_type
+                    )
+                    return error
+                else:
+                    return True
+
+            if '/' in block:
+                block_spl = block.split('/')
+                chill = False
+                for b in block_spl:
+                    for p in sym_content:
+                        if b == p[0] and return_type == p[1]:
+                            chill = True
+                if not chill and p[1] != 'class':
+                    error = 'Method {} from {} is returning attr or expression of type {}. Expected {}'.format(
+                        id,
+                        scope,
+                        p[1],
+                        return_type
+                    )
+                    return error
+                else:
+                    return True
+
+        if return_type == 'VOID':
+            block = block.split(';')[-2]
+            if block:
+                error = 'Invalid expression. Void method {} from {} is trying to return a value.'.format(
+                    id,
+                    scope
+                )
+                return error
+
     def visitMethod(self, ctx: COOLParser.MethodContext):
         # self._scope.get_scope() -> Current Scope
         # ctx.OBJECTID().getText() -> method name
@@ -218,108 +332,18 @@ class Visitor(visitorClass):
             Error(error)
             return super().visitMethod(ctx)
 
-        # Checking return type
-        
+
+        # Checking return type        
         symbols_content = []            
         for sc in self.get_symbols().table._content:
             symbols_content.append([sc.id, sc.type])
 
-        if id != 'main':
-            if block.isalnum():
-                chill = False
-                for p in symbols_content:
-                    if block in p and return_type in p or (block == 'true' and return_type == 'Bool') or (block == '1' and return_type == 'Bool') or (block == 'false' and return_type == 'Bool') or (block == '0' and return_type == 'Bool'):
-                        chill = True
-                if not chill and p[1] != 'class':
-                    error = 'Method {} from {} is returning attr or expression of type {}. Expected {}'.format(
-                        id,
-                        scope,
-                        p[1],
-                        return_type
-                    )
-                    self._errors.append(error)
-                    Error(error)
-
-            else:
-                if ';' in block:
-                    block = block.split(';')[-2]
-                if '+' in block:
-                    block_spl = block.split('+')
-                    chill = False
-                    for b in block_spl:
-                        for p in symbols_content:
-                            if b == p[0] and return_type == p[1]:
-                                chill = True
-                    if not chill and p[1] != 'class':
-                        error = 'Method {} from {} is returning attr or expression of type {}. Expected {}'.format(
-                            id,
-                            scope,
-                            p[1],
-                            return_type
-                        )
-                        self._errors.append(error)
-                        Error(error)
-
-                if '-' in block:
-                    block_spl = block.split('-')
-                    chill = False
-                    for b in block_spl:
-                        for p in symbols_content:
-                            if b == p[0] and return_type == p[1]:
-                                chill = True
-                    if not chill and p[1] != 'class':
-                        error = 'Method {} from {} is returning attr or expression of type {}. Expected {}'.format(
-                            id,
-                            scope,
-                            p[1],
-                            return_type
-                        )
-                        self._errors.append(error)
-                        Error(error)
-
-                if '*' in block:
-                    block_spl = block.split('*')
-                    chill = False
-                    for b in block_spl:
-                        for p in symbols_content:
-                            if b == p[0] and return_type == p[1]:
-                                chill = True
-                    if not chill and p[1] != 'class':
-                        error = 'Method {} fro {} is returning attr or expression of type {}. Expected {}'.format(
-                            id,
-                            scope,
-                            p[1],
-                            return_type
-                        )
-                        self._errors.append(error)
-                        Error(error)
-
-                if '/' in block:
-                    block_spl = block.split('/')
-                    chill = False
-                    for b in block_spl:
-                        for p in symbols_content:
-                            if b == p[0] and return_type == p[1]:
-                                chill = True
-                    if not chill and p[1] != 'class':
-                        error = 'Method {} from {} is returning attr or expression of type {}. Expected {}'.format(
-                            id,
-                            scope,
-                            p[1],
-                            return_type
-                        )
-                        self._errors.append(error)
-                        Error(error)
-
-            if return_type == 'VOID':
-                block = block.split(';')[-2]
-                if block:
-                    error = 'Invalid expression. Void method {} from {} is trying to return a value.'.format(
-                        id,
-                        scope
-                    )
-                    self._errors.append(error)
-                    Error(error)
+        return_checked = self.verify_returns(symbols_content, id, block, return_type, scope)
+        if return_checked != True:
+            if return_checked == None:
+                print(symbols_content, id, block, return_type, scope)
+            self._errors.append(return_checked)
+            Error(return_checked)
 
         # print(parameters)
         return super().visitMethod(ctx)

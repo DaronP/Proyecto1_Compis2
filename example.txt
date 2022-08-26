@@ -3,7 +3,7 @@ class Coordinates {
     y: INT;
 
     isSet(): Bool {
-        true
+        x
     };
 };
 

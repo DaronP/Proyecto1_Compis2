@@ -204,8 +204,8 @@ class Scope:
     def __init__(self) -> None:
         self.scope = Stack()
 
-    def get_scope(self) -> str:
-        return self.scope.peek()
+    def get_scope(self, offset=-1) -> str:
+        return self.scope.peek(offset)
 
     def push_scope(self, scope: str) -> None:
         self.scope.push(scope)

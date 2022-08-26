@@ -261,4 +261,13 @@ class Visitor(visitorClass):
         return super().visitProperty(ctx)
 
     def visitMinus(self, ctx: COOLParser.MinusContext):
+
+        print(ctx.getText())
+        operand, operating = ctx.expression()
+        operand = operand.getText()
+        operating = operating.getText()
+        current_offset = -1
+        scope = self._scope.get_scope(current_offset)
+        self._scope.get_scope()
+
         return super().visitMinus(ctx)

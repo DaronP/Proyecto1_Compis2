@@ -8,8 +8,8 @@ class Stack:
     def size(self):
         return len(self._content)
 
-    def peek(self):
-        return self._content[-1]
+    def peek(self, offset=-1):
+        return self._content[offset]
 
     def push(self, new):
         self._content.append(new)

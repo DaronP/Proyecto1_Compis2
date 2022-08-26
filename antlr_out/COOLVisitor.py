@@ -31,7 +31,6 @@ class COOLVisitor(ParseTreeVisitor):
         CLASS TYPEID (INHERITS TYPEID)? { feature ;)* }
 
         """
-
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by COOLParser#method.

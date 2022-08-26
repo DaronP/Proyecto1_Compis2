@@ -7,10 +7,11 @@ class Coordinates {
     };
 };
 
+
 class Point inherits Coordinates {
-    isSet(somevar: Bool) : Bool { false };
     init(hd : Int, tl : List) : INT {    
         {        
+            while true LOOP { x + y; } POOL;
             x + y;
             x + y;
             x + y;
@@ -21,6 +22,14 @@ class Point inherits Coordinates {
         x + y            
     };
 };
+
+class SomeClass inherits Point {
+    x: INT;
+    isSet(): Bool {
+        true
+    };
+};
+
 
 class Line {
     from: Point;

@@ -27,5 +27,5 @@ class Stack:
                 return self._content[j]
         return None
 
-    def getContent(self):
+    def get_content(self):
         return self._content

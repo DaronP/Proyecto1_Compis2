@@ -2,7 +2,7 @@ from Structs.Table import *
 from antlr_out.COOLLexer import COOLLexer
 from antlr_out.COOLParser import COOLParser
 from antlr_out.COOLVisitor import COOLVisitor
-
+from Console.Console import Error
 visitorClass = COOLVisitor
 lexerClass = COOLLexer
 
@@ -20,6 +20,7 @@ class Visitor(visitorClass):
         self.mainExists = False
         self.mainMethodExists = False
 
+    # region getters
     def get_symbols(self):
         return self._symbols
 
@@ -32,6 +33,8 @@ class Visitor(visitorClass):
     def get_errors(self):
         return self._errors
 
+    # endregion
+
     def visitClassDefine(self, ctx: COOLParser.ClassDefineContext):
         '''
         If C inherits from P:
@@ -39,27 +42,26 @@ class Visitor(visitorClass):
         - C has all the features of P
         - After C has been injected with all of P's attributes, P is no longer needed for C
         '''
-        # Everytime we are entering a class definition, we are inside the global scope
+        # Everytime we are entering a class definition, we are inside the global scope (Classes can't be declared in any other scope)
         self._scope.clean()
         self._scope.push_scope('global')
 
         name = ctx.TYPEID()[0].getText()  # The name of the class
         if name == 'Main':
             self.mainExists = True
-        self._scope.push_scope(name)
         inherited = None if len(ctx.TYPEID()) == 1 else ctx.TYPEID()[  # The name of the inherited class (if any)
             1].getText()
 
         new_symbol = Symbol(
             symbol_type='class',
             symbol_id=name,
-            scope=self._scope.get_scope(),
+            scope='global',
             line=ctx.start.line,
             column=ctx.TYPEID()[0].symbol.column + 1
         )
 
         # Find a symbol in the scope
-        pre_existing_symbol = self._symbols.find(new_symbol)
+        pre_existing_symbol = self._symbols.find(find_element=new_symbol)
         if pre_existing_symbol is not None:
             in_line, _ = pre_existing_symbol.get_coords()
             from_line, _ = new_symbol.get_coords()
@@ -68,13 +70,38 @@ class Visitor(visitorClass):
                 from_line,
                 in_line)
             self._errors.append(error)
-            print(error)
+            Error(error)
             return super().visitClassDefine(ctx)
 
+        self._scope.push_scope(name)
         self._symbols.push(new_symbol)
+        if inherited:
+            inherited_symbol = self._symbols.find(element_name=inherited)
+            if inherited_symbol is None:
+                error = 'Class {} not yet defined (required by {} in line)'.format(
+                    inherited, name)
+                self._errors.append(error)
+                Error(error)
+                return super().visitClassDefine(ctx)
+            inherited_symbol_scope = inherited_symbol.id
+            for method in self._methods.table.get_content():
+                if method.scope == inherited_symbol_scope:
+                    new_method = method.copy()
+                    new_method.scope = name
+                    new_method.inherited_from = inherited
+                    self._methods.push(new_method)
+
+            for symbol in self._symbols.table.get_content():
+                if symbol.scope == inherited_symbol_scope:
+                    new_symbol = symbol.copy()
+                    new_symbol.scope = name
+                    new_symbol.inherits_from = inherited
+                    print('Migrating symbol {} from {} to {}'.format(
+                        new_symbol.id, inherited, name))
+                    self._symbols.push(new_symbol)
 
         print(
-            f"Found class >> {name} << {f'that inherites from >> {inherited} <<' if inherited else ''}")
+            f"Found class >> {name} << {f'that inherits from >> {inherited} <<' if inherited else ''}")
 
         return super().visitClassDefine(ctx)
 
@@ -138,10 +165,41 @@ class Visitor(visitorClass):
             return_type=return_type,
         )
 
-        if self._methods.exists(new_method):
-            error = 'Error: Method {} already defined'.format(id)
-            self._errors.append(error)
-            print(error)
+        previous_existing_method: Method = self._methods.find(new_method)
+
+        # The method existed already, either by inheritance or by redefinition
+        if previous_existing_method is not None:
+
+            # It is by inheritance
+            if previous_existing_method.inherited_from is not None:
+
+                # The method is overriding a method from a parent class if they have the same signature
+                # If they have the same signature, it is overriding
+                signature_is_same, errors = previous_existing_method.same_signature(
+                    new_method)
+                if signature_is_same:
+                    # If they have the same signature, allow for the implementation by modifying the existing method
+                    # Name, scope, param types (but not names), return type should be the same should be the same as the previous method
+                    previous_existing_method.body = new_method.body
+                    previous_existing_method.parameters = new_method.parameters.copy()
+                    # Make it so that the method is not "inherited" anymore
+                    previous_existing_method.inherited_from = None
+
+                    # If they do not have the same signature, then it is an error
+                else:
+                    for suberror in errors:
+                        error = 'Method {} signature (class {}) is not the same as the parent\'s (class {}): {}'.format(
+                            id, scope, previous_existing_method.inherited_from, suberror)
+                        self._errors.append(error)
+                        Error(error)
+                    return super().visitMethod(ctx)
+
+            # It is by redefinition
+            else:
+                error = 'Redefinition of method {} in "{}" scope'.format(
+                    id, scope)
+                self._errors.append(error)
+                Error(error)
         else:
             self._methods.push(new_method)
         # self._methods.append(id)
@@ -153,8 +211,31 @@ class Visitor(visitorClass):
         if self.mainMethodExists is not True and scope == 'Main':
             error = 'No main method found'
             self._errors.append(error)
-            print(error)
+            Error(error)
             return super().visitMethod(ctx)
 
-        print(parameters)
+        # print(parameters)
         return super().visitMethod(ctx)
+
+    def visitProperty(self, ctx: COOLParser.PropertyContext):
+
+        name = ctx.OBJECTID().getText()
+        line = ctx.start.line
+        column = ctx.start.column
+        scope = self._scope.get_scope()
+        symbol_type = ctx.TYPEID().getText()
+
+        new_symbol = Symbol(
+            symbol_id=name,
+            line=line,
+            column=column,
+            inherits_from=None,
+            scope=scope,
+            offset=0,
+            symbol_type=symbol_type
+        )
+
+        existing_symbol = self._symbols.find(new_symbol)
+        self._symbols.push(new_symbol)
+        print(new_symbol)
+        return super().visitProperty(ctx)

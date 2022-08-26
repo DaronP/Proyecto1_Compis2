@@ -25,6 +25,9 @@ def main(argv: str):
         methods=methods, types=types, symbols=symbols)
 
     intermediate_code.visit(tree)
+    print(symbols)
+    print(methods)
+    print(errors)
     print()
 
 

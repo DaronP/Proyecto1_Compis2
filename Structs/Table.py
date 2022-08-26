@@ -137,6 +137,10 @@ class SymbolsTable(Table):
         return super().push(new_element)
 
     def find(self, find_element: Symbol = None, element_name: str = None):
+        '''
+        Searches either by using the name,
+        or by using a symbol to look by name and scope
+        '''
         if find_element:
             for symbol in self.table.get_content():
                 current_symbol: Symbol = symbol

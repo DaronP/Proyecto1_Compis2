@@ -236,6 +236,23 @@ class Visitor(visitorClass):
         )
 
         existing_symbol = self._symbols.find(new_symbol)
+        if existing_symbol:
+            if existing_symbol.inherits_from is None:
+                error = 'Redefinition of property {} in "{}" scope'.format(
+                    name, scope)
+                self._errors.append(error)
+                Error(error)
+                return super().visitProperty(ctx)
+            if existing_symbol.type != new_symbol.type:
+                error = 'Symbol "{}" of type "{}" in scope "{}" is already defined as type "{}" in scope "{}"'.format(
+                    new_symbol.id,
+                    new_symbol.type,
+                    new_symbol.scope,
+                    existing_symbol.type,
+                    existing_symbol.inherits_from
+                )
+                Error(error)
+                return super().visitProperty(ctx)
         self._symbols.push(new_symbol)
         print(new_symbol)
         return super().visitProperty(ctx)

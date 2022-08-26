@@ -24,8 +24,6 @@ class Point inherits Coordinates {
 };
 
 class SomeClass inherits Point {
-    x: INT;
-    x: INT;
     isSet(): Bool {
         true
     };

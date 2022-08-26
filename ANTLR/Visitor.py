@@ -57,7 +57,8 @@ class Visitor(visitorClass):
             symbol_id=name,
             scope='global',
             line=ctx.start.line,
-            column=ctx.TYPEID()[0].symbol.column + 1
+            column=ctx.TYPEID()[0].symbol.column + 1,
+            inherits_from=inherited
         )
 
         # Find a symbol in the scope
@@ -242,8 +243,7 @@ class Visitor(visitorClass):
                     name, scope)
                 self._errors.append(error)
                 Error(error)
-                return super().visitProperty(ctx)
-            if existing_symbol.type != new_symbol.type:
+            elif existing_symbol.type != new_symbol.type:
                 error = 'Symbol "{}" of type "{}" in scope "{}" is already defined as type "{}" in scope "{}"'.format(
                     new_symbol.id,
                     new_symbol.type,
@@ -252,7 +252,7 @@ class Visitor(visitorClass):
                     existing_symbol.inherits_from
                 )
                 Error(error)
-                return super().visitProperty(ctx)
+            existing_symbol.inherits_from = None
         self._symbols.push(new_symbol)
         print(new_symbol)
         return super().visitProperty(ctx)

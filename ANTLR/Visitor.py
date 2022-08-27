@@ -442,7 +442,6 @@ class Visitor(visitorClass):
             return super().visitMinus(ctx)
         return super().visitMinus(ctx)
 
-
     def visitAdd(self, ctx: COOLParser.AddContext):
         operand, operating = ctx.expression()
         operand = operand.getText()
@@ -489,7 +488,6 @@ class Visitor(visitorClass):
             Error(error)
             return super().visitAdd(ctx)
         return super().visitAdd(ctx)
-
 
     def visitMultiply(self, ctx: COOLParser.MultiplyContext):
         operand, operating = ctx.expression()
@@ -538,8 +536,6 @@ class Visitor(visitorClass):
             return super().visitMultiply(ctx)
         return super().visitMultiply(ctx)
 
-
-
     def visitDivision(self, ctx: COOLParser.DivisionContext):
         operand, operating = ctx.expression()
         operand = operand.getText()
@@ -586,3 +582,58 @@ class Visitor(visitorClass):
             Error(error)
             return super().visitDivision(ctx)
         return super().visitDivision(ctx)
+
+    def visitAssignment(self, ctx: COOLParser.AssignmentContext):
+        operand = ctx.OBJECTID().getText()
+        operating = ctx.expression().getText()
+
+        reverse_scopes = self._scope.scope.get_content()[::-1]
+        type_operand = get_type(operand)
+        type_operating = get_type(operating)
+
+        if type_operand == 'VAR':
+            # Look up the symbol in the table
+            found = False
+            for scope in reverse_scopes:
+                lookup_symbol = self._symbols.find(Symbol(symbol_id=operand, scope=scope))
+                if lookup_symbol:
+                    found = True
+                    break
+            if not found:
+                error = 'Symbol "{}" not found in scope "{}"'.format(
+                    operand, self._scope.get_scope())
+                self._errors.append(error)
+                Error(error)
+                return super().visitAssignment(ctx)
+            type_operand = lookup_symbol.type
+        
+        if type_operating == 'VAR':
+            for scope in reverse_scopes:
+                lookup_symbol = self._symbols.find(Symbol(symbol_id=operating, scope=scope))
+                if lookup_symbol:
+                    found = True
+                    break
+            if not found:
+                error = 'Symbol "{}" not found in scope "{}"'.format(
+                    operating, self._scope.get_scope())
+                self._errors.append(error)
+                Error(error)
+                return super().visitAssignment(ctx)
+            type_operating = lookup_symbol.type
+        
+        if type_operand != type_operating:
+            if type_operand == 'INT' and type_operating == 'BOOL':
+                error = 'Implicit casting of BOOL to INT'
+                self._errors.append(error)
+                Error(error)
+            elif type_operand == 'BOOL' and type_operating == 'INT':
+                error = 'Implicit casting of INT to BOOL'
+                self._errors.append(error)
+                Error(error)
+            else:
+                error = 'Operands "{}" and "{}" have different types "{}" and "{}" ()'.format(
+                operand, operating, type_operand, type_operating)
+                self._errors.append(error)
+                Error(error)
+            return super().visitAssignment(ctx)
+        return super().visitAssignment(ctx)

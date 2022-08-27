@@ -11,6 +11,7 @@ class Coordinates {
 class Point inherits Coordinates {
     init(hd : Int, tl : List) : INT {    
         {
+            x <- y;
             while true LOOP { x + y; } POOL;
             x - y;
             x + y;

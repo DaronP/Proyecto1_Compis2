@@ -719,7 +719,7 @@ class Visitor(visitorClass):
         return super().visitWhile(ctx)
 
     def visitMethodCall(self, ctx: COOLParser.MethodCallContext):
-        print(ctx.expression())
+        return visitorClass(ctx)
 
     
     def visitOwnMethodCall(self, ctx: COOLParser.OwnMethodCallContext):
@@ -731,12 +731,12 @@ class Visitor(visitorClass):
             body[-1] = body[-1].split(',')
         except:
             pass
-
+        
+        isDeclared = False
         for meth in reverse_methods:
             if meth.name == body[0]:
-                if len(meth.parameters) == len(body[1]):
-                    print('AWEBO')
-                else:
+                isDeclared = True
+                if len(meth.parameters) != len(body[1]) and body[1] != ['']:
                     error = 'Method {} from {} is missing {} required argument. Expecting {} arguments.'.format(
                         body[0],
                         reverse_methods[0].name,
@@ -744,10 +744,10 @@ class Visitor(visitorClass):
                         len(meth.parameters)
                     )
                     self._errors.append(error)
-            else:
-                error = 'Method {} from {} is beign called before decalration'.format(
-                        body[0],
-                        reverse_methods[0].name
-                    )
-                self._errors.append(error)
-        pass
+        if not isDeclared:
+            error = 'Method {} from {} is beign called before decalration'.format(
+                    body[0],
+                    reverse_methods[0].name
+                )
+            self._errors.append(error)
+        return super().visitOwnMethodCall(ctx)

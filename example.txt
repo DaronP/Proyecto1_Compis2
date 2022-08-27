@@ -2,11 +2,11 @@ class Coordinates {
     x: INT;
     y: INT;
 
-    isSet(hd : Int, tl : List): Bool {
+    isSet(): Bool {
         true
     };
     isCalling(): Bool {
-        isSet(hd, tl)
+        isSet()
     };
 };
 
@@ -31,6 +31,7 @@ class Point inherits Coordinates {
     some_init(hd : Int, tl : List) : INT {    
         x + y            
     };
+    
 };
 
 class SomeClass inherits Point {
@@ -43,6 +44,9 @@ class SomeClass inherits Point {
 class Line {
     from: Point;
     to: Point;
+    some_meth(): Bool{
+        Coordinates.isCalling()
+    }
 };
 
 class Main {

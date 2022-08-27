@@ -1,5 +1,5 @@
 class Coordinates {
-    x: Bool;
+    x: INT;
     y: INT;
 
     isSet(): Bool {
@@ -11,7 +11,7 @@ class Coordinates {
 class Point inherits Coordinates {
     init(hd : Int, tl : List) : INT {    
         {
-            IF true
+            IF x
             THEN
                 x <- y;
             ELSE

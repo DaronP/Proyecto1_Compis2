@@ -2,8 +2,11 @@ class Coordinates {
     x: INT;
     y: INT;
 
-    isSet(): Bool {
+    isSet(hd : Int, tl : List): Bool {
         true
+    };
+    isCalling(): Bool {
+        isSet(hd, tl)
     };
 };
 

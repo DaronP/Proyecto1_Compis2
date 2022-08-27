@@ -2,6 +2,7 @@ import sys
 from antlr4 import FileStream, CommonTokenStream
 from ANTLR.Intermediate import Intermediate
 from ANTLR.Visitor import Visitor
+from Console.Console import Error
 from antlr_out.COOLLexer import COOLLexer
 from antlr_out.COOLParser import COOLParser
 
@@ -27,7 +28,8 @@ def main(argv: str):
     intermediate_code.visit(tree)
     print(symbols)
     print(methods)
-    print(errors)
+    for err in errors:
+        Error(err)
     print()
 
 

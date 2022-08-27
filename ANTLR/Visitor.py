@@ -1,3 +1,4 @@
+from ipaddress import collapse_addresses
 from ANTLR.HelperFunctions.VisitMethod import get_type
 from Structs.Table import *
 from antlr_out.COOLLexer import COOLLexer
@@ -73,18 +74,20 @@ class Visitor(visitorClass):
                 from_line,
                 in_line)
             self._errors.append(error)
-            Error(error)
+            
             return super().visitClassDefine(ctx)
 
         self._scope.push_scope(Scope(name, 'class'))
         self._symbols.push(new_symbol)
         if inherited:
             inherited_symbol = self._symbols.find(element_name=inherited)
+            
             if inherited_symbol is None:
-                error = 'Class {} not yet defined (required by {} in line)'.format(
-                    inherited, name)
+                in_line = new_symbol.get_coords()
+                error = 'Class {} not yet defined (required by {} in line {})'.format(
+                    inherited, name, in_line)
                 self._errors.append(error)
-                Error(error)
+                
                 return super().visitClassDefine(ctx)
             inherited_symbol_scope = inherited_symbol.id
             for method in self._methods.table.get_content():
@@ -109,8 +112,9 @@ class Visitor(visitorClass):
         symbols_content = []            
         for sc in self.get_symbols().table._content:
             if sc.id == 'self' and sc.type:
-                error = 'Invalid attribute declaration in {}: self attribute is reserved exclusively for SELF_TYPE class.'.format(
-                    sc.scope,
+                in_line = new_symbol.get_coords()
+                error = 'Invalid attribute declaration in {}: self attribute is reserved exclusively for SELF_TYPE class in line {}'.format(
+                    sc.scope, in_line
                 )
                 self._errors.append(error)
                 Error(error)
@@ -119,7 +123,7 @@ class Visitor(visitorClass):
 
         return super().visitClassDefine(ctx)
 
-    def verify_returns(self, sym_content=list(), id='', block='', return_type='', scope='', isVoid=False):
+    def verify_returns(self, sym_content=list(), id='', block='', return_type='', scope='', isVoid=False, in_line=0, in_col=0):
         if id == 'main':
             return True
 
@@ -132,19 +136,23 @@ class Visitor(visitorClass):
                 if block in p and return_type in p or (block == 'true' and return_type == 'Bool') or (block == '1' and return_type == 'Bool') or (block == 'false' and return_type == 'Bool') or (block == '0' and return_type == 'Bool'):
                     chill = True
             if (block == 'true' and return_type != 'Bool') or (block == 'false' and return_type != 'Bool'):
-                error = 'Method {} from {} is returning attr or expression of type {}. Expected {}'.format(
+                error = 'Method {} from {} is returning attr or expression of type {}. Expected {}. In line ({}, {})'.format(
                     id,
                     scope,
                     'Bool',
-                    return_type
+                    return_type,
+                    in_line,
+                    in_col
                 )
                 return error
             if not chill and p[1] != 'class':
-                error = 'Method {} from {} is returning attr or expression of type {}. Expected {}'.format(
+                error = 'Method {} from {} is returning attr or expression of type {}. Expected {}. In line ({}, {})'.format(
                     id,
                     scope,
                     p[1],
-                    return_type
+                    return_type,
+                    in_line,
+                    in_col
                 )
                 return error
             else:
@@ -159,11 +167,13 @@ class Visitor(visitorClass):
                         if b == p[0] and return_type == p[1]:
                             chill = True
                 if not chill and p[1] != 'class':
-                    error = 'Method {} from {} is returning attr or expression of type {}. Expected {}'.format(
+                    error = 'Method {} from {} is returning attr or expression of type {}. Expected {}. In line ({}, {})'.format(
                         id,
                         scope,
                         p[1],
-                        return_type
+                        return_type,
+                        in_line,
+                        in_col
                     )
                     return error
                 else:
@@ -177,11 +187,13 @@ class Visitor(visitorClass):
                         if b == p[0] and return_type == p[1]:
                             chill = True
                 if not chill and p[1] != 'class':
-                    error = 'Method {} from {} is returning attr or expression of type {}. Expected {}'.format(
+                    error = 'Method {} from {} is returning attr or expression of type {}. Expected {}, In line ({}, {}).'.format(
                         id,
                         scope,
                         p[1],
-                        return_type
+                        return_type,
+                        in_line,
+                        in_col
                     )
                     return error
                 else:
@@ -195,11 +207,13 @@ class Visitor(visitorClass):
                         if b == p[0] and return_type == p[1]:
                             chill = True
                 if not chill and p[1] != 'class':
-                    error = 'Method {} fro {} is returning attr or expression of type {}. Expected {}'.format(
+                    error = 'Method {} fro {} is returning attr or expression of type {}. Expected {}. In line ({}, {})'.format(
                         id,
                         scope,
                         p[1],
-                        return_type
+                        return_type,
+                        in_line,
+                        in_col
                     )
                     return error
                 else:
@@ -213,11 +227,13 @@ class Visitor(visitorClass):
                         if b == p[0] and return_type == p[1]:
                             chill = True
                 if not chill and p[1] != 'class':
-                    error = 'Method {} from {} is returning attr or expression of type {}. Expected {}'.format(
+                    error = 'Method {} from {} is returning attr or expression of type {}. Expected {}. In line ({}, {})'.format(
                         id,
                         scope,
                         p[1],
-                        return_type
+                        return_type,
+                        in_line,
+                        in_col
                     )
                     return error
                 else:
@@ -226,9 +242,11 @@ class Visitor(visitorClass):
         if isVoid:
             block = block.split(';')[-2]
             if block:
-                error = 'Invalid expression. Void method {} from {} is trying to return a value.'.format(
+                error = 'Invalid expression. Void method {} from {} is trying to return a value. In line ({}, {})'.format(
                     id,
-                    scope
+                    scope,
+                    in_line,
+                    in_col
                 )
                 return error
 
@@ -257,6 +275,7 @@ class Visitor(visitorClass):
         return_type = ctx.TYPEID().getText()
         block = ctx.expression().getText()
         in_line = ctx.start.line
+        in_col = ctx.start.column
         parameters: list(Parameter) = []
         isVoid = False
 
@@ -276,12 +295,14 @@ class Visitor(visitorClass):
                 continue
             name, param_type = i.getText().split(':')
             if name == 'self' and param_type:
-                error = 'Attribute in {} from {} is trying to overwrite self type class'.format(
+                error = 'Attribute in {} from {} is trying to overwrite self type class in line ({}, {})'.format(
                     id,
-                    scope
+                    scope,
+                    in_line,
+                    in_col
                 )
                 self._errors.append(error)
-                Error(error)
+                
             new_param = Parameter(name=name, param_type=param_type)
             parameters.append(new_param)
 
@@ -296,11 +317,12 @@ class Visitor(visitorClass):
                 duplist.append(param)
 
         if duplist:
-            self._errors.extend(['A method parameter >> {} << is repeated inside the method >> {} << from the >> {} << class,  (line {})'.format(
+            self._errors.extend(['A method parameter >> {} << is repeated inside the method >> {} << from the >> {} << class,  (line {}, {})'.format(
                 dup.get_name(),
                 id,
                 scope,
-                in_line
+                in_line,
+                in_col
             ) for dup in duplist])
             return super().visitMethod(ctx)
         # endregion
@@ -337,18 +359,18 @@ class Visitor(visitorClass):
                     # If they do not have the same signature, then it is an error
                 else:
                     for suberror in errors:
-                        error = 'Method {} signature (class {}) is not the same as the parent\'s (class {}): {}'.format(
-                            id, scope, previous_existing_method.inherited_from, suberror)
+                        error = 'Method {} signature (class {}) is not the same as the parent\'s (class {}): {} in line ({}, {})'.format(
+                            id, scope, previous_existing_method.inherited_from, suberror, in_line, in_col)
                         self._errors.append(error)
-                        Error(error)
+                        
                     return super().visitMethod(ctx)
 
             # It is by redefinition
             else:
-                error = 'Redefinition of method {} in "{}"\'s scope'.format(
-                    id, scope)
+                error = 'Redefinition of method {} in "{}"\'s scope in line ({}, {})'.format(
+                    id, scope, in_line, in_col)
                 self._errors.append(error)
-                Error(error)
+                
         else:
             self._methods.push(new_method)
         # self._methods.append(id)
@@ -399,21 +421,23 @@ class Visitor(visitorClass):
         existing_symbol = self._symbols.find(new_symbol)
         if existing_symbol:
             if existing_symbol.inherits_from is None:
-                error = 'Redefinition of property {} in "{}"\'s scope'.format(
-                    name, scope)
+                error = 'Redefinition of property {} in "{}"\'s scope in line ({}, {})'.format(
+                    name, scope, line, column)
                 self._errors.append(error)
-                Error(error)
+                
                 return super().visitProperty(ctx)
             elif existing_symbol.type != new_symbol.type:
-                error = 'Symbol "{}" of type "{}" in scope "{}" is already defined as type "{}" in scope "{}"'.format(
+                error = 'Symbol "{}" of type "{}" in scope "{}" is already defined as type "{}" in scope "{}" in line ({}, {})'.format(
                     new_symbol.id,
                     new_symbol.type,
                     new_symbol.scope,
                     existing_symbol.type,
-                    existing_symbol.inherits_from
+                    existing_symbol.inherits_from,
+                    line,
+                    column
                 )
                 self._errors.append(error)
-                Error(error)
+                
                 return super().visitProperty(ctx)
             existing_symbol.inherits_from = None
         self._symbols.push(new_symbol)
@@ -424,6 +448,8 @@ class Visitor(visitorClass):
         operand, operating = ctx.expression()
         operand = operand.getText()
         operating = operating.getText()
+        line = ctx.start.line
+        column = ctx.start.column
 
         reverse_scopes = self._scope.scope.get_content()[::-1]
         type_operand = get_type(operand)
@@ -438,10 +464,10 @@ class Visitor(visitorClass):
                     found = True
                     break
             if not found:
-                error = 'Symbol "{}" not found in scope "{}"'.format(
-                    operand, self._scope.get_scope())
+                error = 'Symbol "{}" not found in scope "{}" in line ({}, {})'.format(
+                    operand, self._scope.get_scope(), line, column)
                 self._errors.append(error)
-                Error(error)
+                
                 return super().visitMinus(ctx)
             type_operand = lookup_symbol.type
         
@@ -452,18 +478,18 @@ class Visitor(visitorClass):
                     found = True
                     break
             if not found:
-                error = 'Symbol "{}" not found in scope "{}"'.format(
-                    operating, self._scope.get_scope())
+                error = 'Symbol "{}" not found in scope "{}" in line ({}, {})'.format(
+                    operating, self._scope.get_scope(), line, column)
                 self._errors.append(error)
-                Error(error)
+                
                 return super().visitMinus(ctx)
             type_operating = lookup_symbol.type
         
         if type_operand != type_operating:
-            error = 'Operands "{}" and "{}" have different types "{}" and "{}" (Implicit Casting!)'.format(
-                operand, operating, type_operand, type_operating)
+            error = 'Operands "{}" and "{}" have different types "{}" and "{}" (Implicit Casting!) in line ({}, {})'.format(
+                operand, operating, type_operand, type_operating, line, column)
             self._errors.append(error)
-            Error(error)
+            
             return super().visitMinus(ctx)
         return super().visitMinus(ctx)
 
@@ -471,6 +497,8 @@ class Visitor(visitorClass):
         operand, operating = ctx.expression()
         operand = operand.getText()
         operating = operating.getText()
+        line = ctx.start.line
+        column = ctx.start.column
 
         reverse_scopes = self._scope.scope.get_content()[::-1]
         type_operand = get_type(operand)
@@ -485,10 +513,10 @@ class Visitor(visitorClass):
                     found = True
                     break
             if not found:
-                error = 'Symbol "{}" not found in scope "{}"'.format(
-                    operand, self._scope.get_scope())
+                error = 'Symbol "{}" not found in scope "{}" in line ({}, {})'.format(
+                    operand, self._scope.get_scope(), line, column)
                 self._errors.append(error)
-                Error(error)
+                
                 return super().visitAdd(ctx)
             type_operand = lookup_symbol.type
         
@@ -499,18 +527,18 @@ class Visitor(visitorClass):
                     found = True
                     break
             if not found:
-                error = 'Symbol "{}" not found in scope "{}"'.format(
-                    operating, self._scope.get_scope())
+                error = 'Symbol "{}" not found in scope "{}" in line ({}, {})'.format(
+                    operating, self._scope.get_scope(), line, column)
                 self._errors.append(error)
-                Error(error)
+                
                 return super().visitAdd(ctx)
             type_operating = lookup_symbol.type
         
         if type_operand != type_operating:
-            error = 'Operands "{}" and "{}" have different types "{}" and "{}" (Implicit Casting!)'.format(
-                operand, operating, type_operand, type_operating)
+            error = 'Operands "{}" and "{}" have different types "{}" and "{}" (Implicit Casting!) in line ({}, {})'.format(
+                operand, operating, type_operand, type_operating, line, column)
             self._errors.append(error)
-            Error(error)
+            
             return super().visitAdd(ctx)
         return super().visitAdd(ctx)
 
@@ -518,6 +546,8 @@ class Visitor(visitorClass):
         operand, operating = ctx.expression()
         operand = operand.getText()
         operating = operating.getText()
+        line = ctx.start.line
+        column = ctx.start.column
 
         reverse_scopes = self._scope.scope.get_content()[::-1]
         type_operand = get_type(operand)
@@ -532,10 +562,10 @@ class Visitor(visitorClass):
                     found = True
                     break
             if not found:
-                error = 'Symbol "{}" not found in scope "{}"'.format(
-                    operand, self._scope.get_scope())
+                error = 'Symbol "{}" not found in scope "{}" in line ({}, {})'.format(
+                    operand, self._scope.get_scope(), line, column)
                 self._errors.append(error)
-                Error(error)
+                
                 return super().visitMultiply(ctx)
             type_operand = lookup_symbol.type
         
@@ -546,18 +576,18 @@ class Visitor(visitorClass):
                     found = True
                     break
             if not found:
-                error = 'Symbol "{}" not found in scope "{}"'.format(
-                    operating, self._scope.get_scope())
+                error = 'Symbol "{}" not found in scope "{}" in line ({}, {})'.format(
+                    operating, self._scope.get_scope(), line, column)
                 self._errors.append(error)
-                Error(error)
+                
                 return super().visitMultiply(ctx)
             type_operating = lookup_symbol.type
         
         if type_operand != type_operating:
-            error = 'Operands "{}" and "{}" have different types "{}" and "{}" (Implicit Casting!)'.format(
-                operand, operating, type_operand, type_operating)
+            error = 'Operands "{}" and "{}" have different types "{}" and "{}" (Implicit Casting!) in line ({}, {})'.format(
+                operand, operating, type_operand, type_operating, line, column)
             self._errors.append(error)
-            Error(error)
+            
             return super().visitMultiply(ctx)
         return super().visitMultiply(ctx)
 
@@ -565,6 +595,8 @@ class Visitor(visitorClass):
         operand, operating = ctx.expression()
         operand = operand.getText()
         operating = operating.getText()
+        line = ctx.start.line
+        column = ctx.start.column
 
         reverse_scopes = self._scope.scope.get_content()[::-1]
         type_operand = get_type(operand)
@@ -579,10 +611,10 @@ class Visitor(visitorClass):
                     found = True
                     break
             if not found:
-                error = 'Symbol "{}" not found in scope "{}"'.format(
-                    operand, self._scope.get_scope())
+                error = 'Symbol "{}" not found in scope "{}" in line ({}, {})'.format(
+                    operand, self._scope.get_scope(), line, column)
                 self._errors.append(error)
-                Error(error)
+                
                 return super().visitDivision(ctx)
             type_operand = lookup_symbol.type
         
@@ -593,24 +625,26 @@ class Visitor(visitorClass):
                     found = True
                     break
             if not found:
-                error = 'Symbol "{}" not found in scope "{}"'.format(
-                    operating, self._scope.get_scope())
+                error = 'Symbol "{}" not found in scope "{}" in line ({}, {})'.format(
+                    operating, self._scope.get_scope(), line, column)
                 self._errors.append(error)
-                Error(error)
+                
                 return super().visitDivision(ctx)
             type_operating = lookup_symbol.type
         
         if type_operand != type_operating:
-            error = 'Operands "{}" and "{}" have different types "{}" and "{}" (Implicit Casting!)'.format(
-                operand, operating, type_operand, type_operating)
+            error = 'Operands "{}" and "{}" have different types "{}" and "{}" (Implicit Casting!) in line ({}, {})'.format(
+                operand, operating, type_operand, type_operating, line, column)
             self._errors.append(error)
-            Error(error)
+            
             return super().visitDivision(ctx)
         return super().visitDivision(ctx)
 
     def visitAssignment(self, ctx: COOLParser.AssignmentContext):
         operand = ctx.OBJECTID().getText()
         operating = ctx.expression().getText()
+        line = ctx.start.line
+        column = ctx.start.column
 
         reverse_scopes = self._scope.scope.get_content()[::-1]
         type_operand = get_type(operand)
@@ -625,10 +659,10 @@ class Visitor(visitorClass):
                     found = True
                     break
             if not found:
-                error = 'Symbol "{}" not found in scope "{}"'.format(
-                    operand, self._scope.get_scope())
+                error = 'Symbol "{}" not found in scope "{}" in line ({}, {})'.format(
+                    operand, self._scope.get_scope(), line, column)
                 self._errors.append(error)
-                Error(error)
+                
                 return super().visitAssignment(ctx)
             type_operand = lookup_symbol.type
         
@@ -639,33 +673,39 @@ class Visitor(visitorClass):
                     found = True
                     break
             if not found:
-                error = 'Symbol "{}" not found in scope "{}"'.format(
-                    operating, self._scope.get_scope())
+                error = 'Symbol "{}" not found in scope "{}" ine line ({}, {})'.format(
+                    operating, self._scope.get_scope(), line, column)
                 self._errors.append(error)
-                Error(error)
+                
                 return super().visitAssignment(ctx)
             type_operating = lookup_symbol.type
         
         if type_operand != type_operating:
             if type_operand == 'INT' and type_operating == 'BOOL':
-                error = 'Implicit casting of BOOL to INT'
+                error = 'Implicit casting of BOOL to INT in line ({}, {})'.format(
+                    line, column
+                )
                 self._errors.append(error)
-                Error(error)
+                
             elif type_operand == 'BOOL' and type_operating == 'INT':
-                error = 'Implicit casting of INT to BOOL'
+                error = 'Implicit casting of INT to BOOL in line ({}, {})'.format(
+                    line, column
+                )
                 self._errors.append(error)
-                Error(error)
+                
             else:
-                error = 'Operands "{}" and "{}" have different types "{}" and "{}" ()'.format(
-                operand, operating, type_operand, type_operating)
+                error = 'Operands "{}" and "{}" have different types "{}" and "{}" () in line ({}, {})'.format(
+                operand, operating, type_operand, type_operating, line, column)
                 self._errors.append(error)
-                Error(error)
+                
             return super().visitAssignment(ctx)
         return super().visitAssignment(ctx)
 
 
     def visitIf(self, ctx: COOLParser.IfContext):
         condition = ctx.expression()[0].getText()
+        line = ctx.start.line
+        column = ctx.start.column
         if condition not in ['true', 'false']:
             # Try to look up the symbol in the table
             reverse_scopes = self._scope.scope.get_content()[::-1]
@@ -676,16 +716,16 @@ class Visitor(visitorClass):
                     found = True
                     break
             if not found:
-                error = 'Symbol "{}" not found in scope "{}"'.format(
-                    condition, self._scope.get_scope())
+                error = 'Symbol "{}" not found in scope "{}" in line ({}, {})'.format(
+                    condition, self._scope.get_scope(), line, column)
                 self._errors.append(error)
-                Error(error)
+                
                 return super().visitIf(ctx)
             if lookup_symbol.type != 'Bool':
-                error = 'Condition "{}" has type "{}" instead of "Bool"'.format(
-                    condition, lookup_symbol.type)
+                error = 'Condition "{}" has type "{}" instead of "Bool" in line ({}, {})'.format(
+                    condition, lookup_symbol.type, line, column)
                 self._errors.append(error)
-                Error(error)
+                
                 return super().visitIf(ctx) 
 
 
@@ -695,6 +735,8 @@ class Visitor(visitorClass):
         
     def visitWhile(self, ctx: COOLParser.WhileContext):
         condition = ctx.expression()[0].getText()
+        line = ctx.start.line
+        column = ctx.start.column
         if condition not in ['true', 'false']:
             # Try to look up the symbol in the table
             reverse_scopes = self._scope.scope.get_content()[::-1]
@@ -705,21 +747,21 @@ class Visitor(visitorClass):
                     found = True
                     break
             if not found:
-                error = 'Symbol "{}" not found in scope "{}"'.format(
-                    condition, self._scope.get_scope())
+                error = 'Symbol "{}" not found in scope "{}" in line ({}, {})'.format(
+                    condition, self._scope.get_scope(), line, column)
                 self._errors.append(error)
-                Error(error)
+                
                 return super().visitWhile(ctx)
             if lookup_symbol.type != 'Bool':
-                error = 'Condition "{}" has type "{}" instead of "Bool"'.format(
-                    condition, lookup_symbol.type)
+                error = 'Condition "{}" has type "{}" instead of "Bool" in line ({}, {})'.format(
+                    condition, lookup_symbol.type, line, column)
                 self._errors.append(error)
-                Error(error)
+                
                 return super().visitWhile(ctx)
         return super().visitWhile(ctx)
 
     def visitMethodCall(self, ctx: COOLParser.MethodCallContext):
-        return visitorClass(ctx)
+        return super().visitMethodCall(ctx)
 
     
     def visitOwnMethodCall(self, ctx: COOLParser.OwnMethodCallContext):
@@ -727,6 +769,8 @@ class Visitor(visitorClass):
         body = reverse_methods[0].body.replace('(', '-')
         body = body.replace(')', '')
         body = body.split('-')
+        line = ctx.start.line
+        column = ctx.start.column
         try:
             body[-1] = body[-1].split(',')
         except:
@@ -737,17 +781,21 @@ class Visitor(visitorClass):
             if meth.name == body[0]:
                 isDeclared = True
                 if len(meth.parameters) != len(body[1]) and body[1] != ['']:
-                    error = 'Method {} from {} is missing {} required argument. Expecting {} arguments.'.format(
+                    error = 'Method {} from {} is missing {} required argument. Expecting {} arguments. in line ({}, {})'.format(
                         body[0],
                         reverse_methods[0].name,
                         (len(meth.parameters) - len(body[1])),
-                        len(meth.parameters)
+                        len(meth.parameters),
+                        line, 
+                        column
                     )
                     self._errors.append(error)
         if not isDeclared:
-            error = 'Method {} from {} is beign called before decalration'.format(
+            error = 'Method {} from {} is beign called before decalration in line ({}, {})'.format(
                     body[0],
-                    reverse_methods[0].name
+                    reverse_methods[0].name,
+                    line,
+                    column
                 )
             self._errors.append(error)
         return super().visitOwnMethodCall(ctx)

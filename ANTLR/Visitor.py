@@ -637,3 +637,9 @@ class Visitor(visitorClass):
                 Error(error)
             return super().visitAssignment(ctx)
         return super().visitAssignment(ctx)
+
+
+    def visitIf(self, ctx: COOLParser.IfContext):
+        condition = ctx.expression()[0].getText()
+
+        return super().visitIf(ctx)

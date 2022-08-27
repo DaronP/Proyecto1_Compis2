@@ -11,22 +11,22 @@ else:
 class COOLVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by COOLParser#program.
-    def visitProgram(self, ctx: COOLParser.ProgramContext):
+    def visitProgram(self, ctx: COOLParser.ProgramContext): # Not needed
         """
         program: programBlocks EOF;
         """
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by COOLParser#classes.
-    def visitClasses(self, ctx: COOLParser.ClassesContext):
+    def visitClasses(self, ctx: COOLParser.ClassesContext): # Not Implemented. Class definition implemented.
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by COOLParser#eof.
-    def visitEof(self, ctx: COOLParser.EofContext):
+    def visitEof(self, ctx: COOLParser.EofContext): # Not needed
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by COOLParser#classDefine.
-    def visitClassDefine(self, ctx: COOLParser.ClassDefineContext):
+    def visitClassDefine(self, ctx: COOLParser.ClassDefineContext): # Implemented
         """
         CLASS TYPEID (INHERITS TYPEID)? { feature ;)* }
 
@@ -34,67 +34,67 @@ class COOLVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by COOLParser#method.
-    def visitMethod(self, ctx: COOLParser.MethodContext):
+    def visitMethod(self, ctx: COOLParser.MethodContext): # Implemented
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by COOLParser#property.
-    def visitProperty(self, ctx: COOLParser.PropertyContext):
+    def visitProperty(self, ctx: COOLParser.PropertyContext): # Implemented
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by COOLParser#formal.
-    def visitFormal(self, ctx: COOLParser.FormalContext):
+    def visitFormal(self, ctx: COOLParser.FormalContext): # Not needed
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by COOLParser#letIn.
-    def visitLetIn(self, ctx: COOLParser.LetInContext):
+    def visitLetIn(self, ctx: COOLParser.LetInContext): # Not implemented
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by COOLParser#minus.
-    def visitMinus(self, ctx: COOLParser.MinusContext):
+    def visitMinus(self, ctx: COOLParser.MinusContext): # Implemented
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by COOLParser#string.
-    def visitString(self, ctx: COOLParser.StringContext):
+    def visitString(self, ctx: COOLParser.StringContext): # Not needed
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by COOLParser#isvoid.
-    def visitIsvoid(self, ctx: COOLParser.IsvoidContext):
+    def visitIsvoid(self, ctx: COOLParser.IsvoidContext): # Not needed
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by COOLParser#while.
-    def visitWhile(self, ctx: COOLParser.WhileContext):
+    def visitWhile(self, ctx: COOLParser.WhileContext): # Pending
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by COOLParser#division.
-    def visitDivision(self, ctx: COOLParser.DivisionContext):
+    def visitDivision(self, ctx: COOLParser.DivisionContext): # Implemented
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by COOLParser#negative.
-    def visitNegative(self, ctx: COOLParser.NegativeContext):
+    def visitNegative(self, ctx: COOLParser.NegativeContext): # Not Needed
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by COOLParser#boolNot.
-    def visitBoolNot(self, ctx: COOLParser.BoolNotContext):
+    def visitBoolNot(self, ctx: COOLParser.BoolNotContext): # Not needed
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by COOLParser#lessThan.
-    def visitLessThan(self, ctx: COOLParser.LessThanContext):
+    def visitLessThan(self, ctx: COOLParser.LessThanContext): # Not Needed
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by COOLParser#block.
-    def visitBlock(self, ctx: COOLParser.BlockContext):
+    def visitBlock(self, ctx: COOLParser.BlockContext): # Not needed
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by COOLParser#id.
-    def visitId(self, ctx: COOLParser.IdContext):
+    def visitId(self, ctx: COOLParser.IdContext): # Not needed
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by COOLParser#multiply.
-    def visitMultiply(self, ctx: COOLParser.MultiplyContext):
+    def visitMultiply(self, ctx: COOLParser.MultiplyContext): # Implemented
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by COOLParser#if.
-    def visitIf(self, ctx: COOLParser.IfContext):
+    def visitIf(self, ctx: COOLParser.IfContext): 
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by COOLParser#case.

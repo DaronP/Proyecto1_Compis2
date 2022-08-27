@@ -11,6 +11,12 @@ class Coordinates {
 class Point inherits Coordinates {
     init(hd : Int, tl : List) : INT {    
         {
+            IF true
+            THEN
+                x <- y;
+            ELSE
+                y <- x;
+            FI
             x <- y;
             while true LOOP { x + y; } POOL;
             x - y;

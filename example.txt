@@ -37,16 +37,13 @@ class Point inherits Coordinates {
 class SomeClass inherits Point {
     x: INT;
     isSet(): Bool {
-        x
+        false
     };
 };
 
 class Line {
     from: Point;
     to: Point;
-    some_meth(): Bool{
-        
-    }
 };
 
 class Line{};

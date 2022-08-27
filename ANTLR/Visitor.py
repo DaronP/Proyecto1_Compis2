@@ -692,3 +692,28 @@ class Visitor(visitorClass):
         
 
         return super().visitIf(ctx)
+        
+    def visitWhile(self, ctx: COOLParser.WhileContext):
+        condition = ctx.expression()[0].getText()
+        if condition not in ['true', 'false']:
+            # Try to look up the symbol in the table
+            reverse_scopes = self._scope.scope.get_content()[::-1]
+            found = False
+            for scope in reverse_scopes:
+                lookup_symbol = self._symbols.find(Symbol(symbol_id=condition, scope=scope))
+                if lookup_symbol:
+                    found = True
+                    break
+            if not found:
+                error = 'Symbol "{}" not found in scope "{}"'.format(
+                    condition, self._scope.get_scope())
+                self._errors.append(error)
+                Error(error)
+                return super().visitWhile(ctx)
+            if lookup_symbol.type != 'Bool':
+                error = 'Condition "{}" has type "{}" instead of "Bool"'.format(
+                    condition, lookup_symbol.type)
+                self._errors.append(error)
+                Error(error)
+                return super().visitWhile(ctx)
+        return super().visitWhile(ctx)

@@ -1,3 +1,4 @@
+from ANTLR.HelperFunctions.VisitMethod import get_type
 from Structs.Table import *
 from antlr_out.COOLLexer import COOLLexer
 from antlr_out.COOLParser import COOLParser
@@ -55,7 +56,7 @@ class Visitor(visitorClass):
         new_symbol = Symbol(
             symbol_type='class',
             symbol_id=name,
-            scope='global',
+            scope=Scope('global', 'global'),
             line=ctx.start.line,
             column=ctx.TYPEID()[0].symbol.column + 1,
             inherits_from=inherited
@@ -86,16 +87,16 @@ class Visitor(visitorClass):
                 return super().visitClassDefine(ctx)
             inherited_symbol_scope = inherited_symbol.id
             for method in self._methods.table.get_content():
-                if method.scope == inherited_symbol_scope:
+                if method.scope.name == inherited_symbol_scope:
                     new_method = method.copy()
-                    new_method.scope = name
+                    new_method.scope = Scope(name, 'method')
                     new_method.inherited_from = inherited
                     self._methods.push(new_method)
 
             for symbol in self._symbols.table.get_content():
-                if symbol.scope == inherited_symbol_scope:
+                if symbol.scope.name == inherited_symbol_scope:
                     new_symbol = symbol.copy()
-                    new_symbol.scope = name
+                    new_symbol.scope = Scope(name, 'symbol')
                     new_symbol.inherits_from = inherited
                     print('Migrating symbol {} from {} to {}'.format(
                         new_symbol.id, inherited, name))
@@ -294,11 +295,8 @@ class Visitor(visitorClass):
 
         # The method existed already, either by inheritance or by redefinition
         if previous_existing_method is not None:
-
             # It is by inheritance
             if previous_existing_method.inherited_from is not None:
-                isInherited = True
-
                 # The method is overriding a method from a parent class if they have the same signature
                 # If they have the same signature, it is overriding
                 signature_is_same, errors = previous_existing_method.same_signature(
@@ -398,13 +396,96 @@ class Visitor(visitorClass):
         return super().visitProperty(ctx)
 
     def visitMinus(self, ctx: COOLParser.MinusContext):
-
-        print(ctx.getText())
         operand, operating = ctx.expression()
         operand = operand.getText()
         operating = operating.getText()
-        current_offset = -1
-        scope = self._scope.get_scope(current_offset)
-        self._scope.get_scope()
 
+        reverse_scopes = self._scope.scope.get_content()[::-1]
+        type_operand = get_type(operand)
+        type_operating = get_type(operating)
+
+        if type_operand == 'VAR':
+            # Look up the symbol in the table
+            found = False
+            for scope in reverse_scopes:
+                lookup_symbol = self._symbols.find(Symbol(symbol_id=operand, scope=scope))
+                if lookup_symbol:
+                    found = True
+                    break
+            if not found:
+                error = 'Symbol "{}" not found in scope "{}"'.format(
+                    operand, self._scope.get_scope())
+                self._errors.append(error)
+                Error(error)
+                return super().visitMinus(ctx)
+            type_operand = lookup_symbol.type
+        
+        if type_operating == 'VAR':
+            for scope in reverse_scopes:
+                lookup_symbol = self._symbols.find(Symbol(symbol_id=operating, scope=scope))
+                if lookup_symbol:
+                    found = True
+                    break
+            if not found:
+                error = 'Symbol "{}" not found in scope "{}"'.format(
+                    operating, self._scope.get_scope())
+                self._errors.append(error)
+                Error(error)
+                return super().visitMinus(ctx)
+            type_operating = lookup_symbol.type
+        
+        if type_operand != type_operating:
+            error = 'Operands "{}" and "{}" have different types "{}" and "{}" (Implicit Casting!)'.format(
+                operand, operating, type_operand, type_operating)
+            self._errors.append(error)
+            Error(error)
+            return super().visitMinus(ctx)
         return super().visitMinus(ctx)
+
+
+    def visitAdd(self, ctx: COOLParser.AddContext):
+        operand, operating = ctx.expression()
+        operand = operand.getText()
+        operating = operating.getText()
+
+        reverse_scopes = self._scope.scope.get_content()[::-1]
+        type_operand = get_type(operand)
+        type_operating = get_type(operating)
+
+        if type_operand == 'VAR':
+            # Look up the symbol in the table
+            found = False
+            for scope in reverse_scopes:
+                lookup_symbol = self._symbols.find(Symbol(symbol_id=operand, scope=scope))
+                if lookup_symbol:
+                    found = True
+                    break
+            if not found:
+                error = 'Symbol "{}" not found in scope "{}"'.format(
+                    operand, self._scope.get_scope())
+                self._errors.append(error)
+                Error(error)
+                return super().visitAdd(ctx)
+            type_operand = lookup_symbol.type
+        
+        if type_operating == 'VAR':
+            for scope in reverse_scopes:
+                lookup_symbol = self._symbols.find(Symbol(symbol_id=operating, scope=scope))
+                if lookup_symbol:
+                    found = True
+                    break
+            if not found:
+                error = 'Symbol "{}" not found in scope "{}"'.format(
+                    operating, self._scope.get_scope())
+                self._errors.append(error)
+                Error(error)
+                return super().visitAdd(ctx)
+            type_operating = lookup_symbol.type
+        
+        if type_operand != type_operating:
+            error = 'Operands "{}" and "{}" have different types "{}" and "{}" (Implicit Casting!)'.format(
+                operand, operating, type_operand, type_operating)
+            self._errors.append(error)
+            Error(error)
+            return super().visitAdd(ctx)
+        return super().visitAdd(ctx)

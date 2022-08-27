@@ -144,7 +144,7 @@ class SymbolsTable(Table):
         if find_element:
             for symbol in self.table.get_content():
                 current_symbol: Symbol = symbol
-                if current_symbol.get_id() == find_element.get_id() and current_symbol.get_scope() == find_element.get_scope():
+                if current_symbol.get_id() == find_element.get_id() and current_symbol.get_scope().name == find_element.get_scope().name:
                     return current_symbol
             return None
         elif element_name:
@@ -178,30 +178,16 @@ class MethodsTable(Table):
             raise "Trying to push a non-method into the methods table"
         return super().push(new_element)
 
-    def find(self, find_element: Method = None, element_name: str = None, element_scope: str = None):
+    def find(self, find_element: Method = None):
         if find_element is not None:
             for method in self.table.get_content():
                 current_method: Method = method
-                if current_method.name == find_element.name:
-                    return [current_method]
+                if current_method.name == find_element.name and current_method.scope.name == find_element.scope.name:
+                    return current_method
             return None
 
-        res = self.table.get_content().copy()
-        if element_name is not None:
-            res = list(filter(lambda x: x is not None, [element if element.name ==
-                                                        element_name else None for element in res]))
-        if element_scope is not None:
-            res = list(filter(lambda x: x is not None, [element if element.scope ==
-                                                        element_scope else None for element in res]))
-        final_arr = []
-
-        for el in res:
-            if el is not None:
-                final_arr.append(el)
-        return final_arr if len(final_arr) else None
-
-    def exists(self, method: Method = None, method_name: str = None, scope: str = None) -> bool:
-        return self.find(find_element=method, element_name=method_name, element_scope=scope) is not None
+    def exists(self, method: Method = None) -> bool:
+        return self.find(find_element=method) is not None
 
     def __str__(self) -> str:
         element_list = [
@@ -248,3 +234,6 @@ class ScopeStack:
     def clean(self) -> None:
         while not self.scope.empty():
             self.pop_scope()
+    
+    def depth(self) -> int:
+        return self.scope.depth()

@@ -1,5 +1,5 @@
 class Coordinates {
-    x: INT;
+    x: Bool;
     y: INT;
 
     isSet(): Bool {
@@ -29,7 +29,6 @@ class SomeClass inherits Point {
         true
     };
 };
-
 
 class Line {
     from: Point;

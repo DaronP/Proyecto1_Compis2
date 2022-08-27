@@ -67,3 +67,19 @@ def find_duplicate_parameters(in_list, in_scope, in_line) -> bool:
             in_line
         ) for dup in duplist])
     return bool(errors), errors if errors else None
+
+
+def get_type(from_var):
+    if from_var is not None:
+        if type(from_var) is str:
+            if from_var.isnumeric():
+                return 'INT'
+            if from_var.startswith('"') and from_var.endswith('"'):
+                return 'STRING'
+            if from_var == 'true' or from_var == 'false':
+                return 'BOOL'
+        if type(from_var) is int:
+            return 'INT'
+        if type(from_var) is bool:
+            return 'BOOL'
+    return 'VAR'

@@ -29,3 +29,6 @@ class Stack:
 
     def get_content(self):
         return self._content
+
+    def depth(self):
+        return len(self._content)

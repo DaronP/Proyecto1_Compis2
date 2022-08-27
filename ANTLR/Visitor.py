@@ -4,6 +4,7 @@ from antlr_out.COOLLexer import COOLLexer
 from antlr_out.COOLParser import COOLParser
 from antlr_out.COOLVisitor import COOLVisitor
 from Console.Console import Error
+import sys
 visitorClass = COOLVisitor
 lexerClass = COOLLexer
 
@@ -105,9 +106,20 @@ class Visitor(visitorClass):
         print(
             f"Found class >> {name} << {f'that inherits from >> {inherited} <<' if inherited else ''}")
 
+        symbols_content = []            
+        for sc in self.get_symbols().table._content:
+            if sc.id == 'self' and sc.type:
+                error = 'Invalid attribute declaration in {}: self attribute is reserved exclusively for SELF_TYPE class.'.format(
+                    sc.scope,
+                )
+                self._errors.append(error)
+                Error(error)
+                sys.exit()
+            symbols_content.append([sc.id, sc.type])
+
         return super().visitClassDefine(ctx)
 
-    def verify_returns(self, sym_content=list(), id='', block='', return_type='', scope=''):
+    def verify_returns(self, sym_content=list(), id='', block='', return_type='', scope='', isVoid=False):
         if id == 'main':
             return True
 
@@ -211,7 +223,7 @@ class Visitor(visitorClass):
                 else:
                     return True
 
-        if return_type == 'VOID':
+        if isVoid:
             block = block.split(';')[-2]
             if block:
                 error = 'Invalid expression. Void method {} from {} is trying to return a value.'.format(
@@ -246,6 +258,7 @@ class Visitor(visitorClass):
         block = ctx.expression().getText()
         in_line = ctx.start.line
         parameters: list(Parameter) = []
+        isVoid = False
 
         # REQUIREMENTS
 
@@ -259,7 +272,16 @@ class Visitor(visitorClass):
         # endregion
         # region Parameters
         for i in ctx.formal():
+            if i.getText() == 'self':
+                continue
             name, param_type = i.getText().split(':')
+            if name == 'self' and param_type:
+                error = 'Attribute in {} from {} is trying to overwrite self type class'.format(
+                    id,
+                    scope
+                )
+                self._errors.append(error)
+                Error(error)
             new_param = Parameter(name=name, param_type=param_type)
             parameters.append(new_param)
 
@@ -282,6 +304,9 @@ class Visitor(visitorClass):
             ) for dup in duplist])
             return super().visitMethod(ctx)
         # endregion
+        for meth in self._methods.table.get_content():
+            if meth.return_type == 'SELF_TYPE':
+                meth.return_type = meth.scope
         # region Duplicate checking
         new_method = Method(
             body=block,
@@ -342,7 +367,7 @@ class Visitor(visitorClass):
             symbols_content.append([sc.id, sc.type])
 
         return_checked = self.verify_returns(
-            symbols_content, id, block, return_type, scope)
+            symbols_content, id, block, return_type, scope, isVoid)
         if return_checked != True:
             if return_checked == None:
                 print(symbols_content, id, block, return_type, scope)
